@@ -1,0 +1,253 @@
+% Copyright 2012 David W. Hogg (NYU).  All rights reserved.
+
+\documentclass[pdftex,aspectratio=169]{beamer}
+\input{./hogg_presentation} % hogg standard colors
+
+\title[Causal Structure]{Data-driven methods and causal structure}
+\author[David W. Hogg \textsl{(NYU) (Flatiron) (MPIA)}]{David W. Hogg \\
+  \textsl{\footnotesize Center for Cosmology and Particle Physics, Department of Physics, New York University}\\
+  \textsl{\footnotesize Flatiron Institute }\\
+  \textsl{\footnotesize Max-Planck-Institut f\"ur Astronomie}}
+\date{2019 December 13}
+
+\newcommand{\conclusion}{
+\begin{frame}
+  \frametitle{punchlines}
+  \begin{itemize}
+  \item Huge data sets create new opportunities.
+    \begin{itemize}
+    \item they also present new challenges
+    \end{itemize}
+  \item Industrial (dot-com) methods are brilliant.
+    \begin{itemize}
+    \item they can only solve a very limited set of problems
+    \end{itemize}
+  \item We won't reap the full benefit of larger data sets without new technology.
+    \begin{itemize}
+    \item call to arms
+    \item (and get rich too!)
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+}
+
+\begin{document}
+
+\begin{frame}[plain]
+\maketitle
+\end{frame}
+
+\conclusion
+
+\begin{frame}
+  \frametitle{map--reduce or die}
+  \begin{itemize}
+  \item \textsl{``We won't even consider algorithms that can't be
+    written in the map--reduce framework.''}
+  \end{itemize}
+\end{frame}
+
+\conclusion
+
+\end{document}
+
+\begin{frame}
+  \frametitle{map--reduce}
+  \begin{itemize}
+  \item map:
+    \begin{itemize}
+    \item at each ``data point'' (on a distributed system), do an
+      operation on that datum, produce output
+    \item \texttt{if "kittens" is in document: \\ ~~~~return (URL, PageRank)}
+    \item \emph{distributed data} is the key: Every datum is near a
+      CPU.
+    \end{itemize}
+  \item reduce:
+    \begin{itemize}
+    \item between each pair of outputs, do an operation and return one
+      new output, recurse up the tree
+    \item \texttt{if PageRank[0] > PageRank[1]: \\ ~~~~return (URL[0], PageRank[0]) \\ else: \\ ~~~~return (URL[1], PageRank[1])}
+    \item \emph{tree structure} of the data center is the key: There are only
+      $\log_2 N$ branches to any datum.
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{map--reduce}
+  \includegraphics[scale=0.75]{../../pgm/mapreduce.pdf}
+\end{frame}
+
+\begin{frame}
+  \frametitle{map--reduce}
+  \begin{itemize}
+  \item Brilliant.  And a huge opportunity.
+    \begin{itemize}
+    \item the \emph{load on your air conditioning} scales as $N\,\log N$
+    \item but the \emph{time it takes} scales as just $\log N$
+    \end{itemize}
+  \item Map--reduce made internet search \emph{possible}.
+    \begin{itemize}
+    \item (goes by many names, some trade-marked!)
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{maximum-likelihood and map--reduce}
+  \begin{itemize}
+  \item full-data likelihood: $\displaystyle p(D\given\theta) =
+    \prod_n p(d_n\given\theta)$
+  \item Find a \emph{local maximum with respect to $\theta$} of this
+    likelihood.
+  \item map:
+    \begin{itemize}
+    \item compute $\displaystyle\frac{\dd \ln p(d_n\given\theta)}{\dd\theta}$
+    \end{itemize}
+  \item reduce:
+    \begin{itemize}
+    \item pairwise sum
+    \end{itemize}
+  \item Go uphill.  Repeat as necessary; each iteration only takes
+    $\log N$ time.
+    \begin{itemize}
+    \item (use L-BFGS or conjugate-gradient or whatever you like)
+    \item complexity is $N\,\log N$, \emph{compute time} is $\log N$
+    \end{itemize}
+  \item Local optimization typically takes $M^2\log N$ time, where $M$ is the \emph{number of parameters}.
+    \begin{itemize}
+    \item (maybe $M^3$ if you want a full error analysis)
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{all that matters is the number of parameters}
+  \begin{itemize}
+  \item So we are done, right?
+  \item<2-> \emph{Nope.}
+  \item<2-> In all \emph{real} problems, the number of parameters $M$ \emph{scales with the data volume $N$}.
+  \item<2-> If you want to go beyond maximum-likelihood, things get \emph{hard}.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{physics problems are hierarchical}
+  \includegraphics{../../pgm/weaklensing.pdf}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Bayesian inference \emph{isn't} map--reduce}
+  \begin{itemize}
+  \item $\displaystyle p(\theta\given D) = \frac{1}{Z}\,p(\theta)\,\prod_n p(d_n\given\theta)$
+  \item map:
+    \begin{itemize}
+    \item compute functions $p(d_n\given\theta)$
+    \end{itemize}
+  \item reduce:
+    \begin{itemize}
+    \item product functions together (ending with the prior)
+    \end{itemize}
+  \item but think about how you pass forward those functions
+    \begin{itemize}
+    \item $\theta$ has $10^6$ or more parameters
+    \item functions are multi-modal
+    \item support is broader than Gaussian
+    \item when the data get large, the \emph{resolution required} becomes unsustainable
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{even the frequentists are doomed}
+  \begin{itemize}
+  \item All the ``$M$ scaling with $N$'' arguments apply to frequentists and Bayesians alike.
+  \item Computing the full-data likelihood \emph{function} is just as hard as computing the full-data posterior PDF.
+    \begin{itemize}
+    \item (local optimization of the likelihood is easy, full description of the function is hard)
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{marginalization is hard---and unavoidable}
+  \includegraphics{../../pgm/weaklensing.pdf}
+\end{frame}
+
+\begin{frame}
+  \frametitle{my approach}
+  \begin{itemize}
+  \item<1-> Brute Force (tm).
+  \item<2-> Plus some help from applied math and computer vision.
+    \begin{itemize}
+    \item approximate Bayesian inference
+    \item very clever Markov-Chain Monte Carlo methods
+    \item exploiting problem sparsity
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{my day job}
+  \begin{itemize}
+  \item Lang \& Hogg {\small(forthcoming)}: a $10^9$-parameter model of the
+    $10^{13}$ \project{Sloan Digital Sky Survey} pixels (\project{The Tractor})
+  \item Brewer \etal\ {\small(forthcoming)}: Bayesian non-parametrics but with
+    priors that represent our actual prior knowledge
+  \item Foreman-Mackey \etal\ {\small(arXiv:1202.3665)}:
+    \project{emcee}, the MCMC Hammer: flexible, parallelized, adaptive
+    sampler
+  \item Bovy, Murray, Hogg {\small(arXiv:0903.5308)}: a dynamical inference
+    fully marginalizing out a non-parametric distribution function
+  \item Bovy \etal\ {\small(arXiv:1105.3975)}: a 60,000-parameter model of
+    700,000 flux measurements, followed by predictions for 160,000,000
+    point sources
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{it's actually worse than you think}
+  \begin{itemize}
+  \item ``More data'' means ``more new discoveries''.
+  \item The \emph{number of hypotheses to test} also grows with the data size $N$.
+  \item There will be far more hypotheses than physicists.
+    \begin{itemize}
+    \item (this is already true, of course)
+    \item citizen science?
+    \item robot science?
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\conclusion
+
+\begin{frame}
+  \frametitle{questions}
+  \begin{itemize}
+  \item Are we concerned about \emph{lossy steps} in data analysis?
+    \begin{itemize}
+    \item catalog generation, two-point function estimation
+    \item principled approaches require likelihood functions
+    \item can we \emph{require} projects to marginalize or to saturate Cram\'er-Rao bounds?
+    \end{itemize}
+  \item Can we more \emph{directly compare theory} with data?
+    \begin{itemize}
+    \item comparisons through ``summary statistics'' are bad!
+    \item simulations are slow; put them in the inference loop?
+    \item propagation of \emph{theory} uncertainties (known unknowns)?
+    \end{itemize}
+  \item How do we ensure \emph{flexibility of systems}?
+    \begin{itemize}
+    \item fast evolution in hardware, methodological, and scientific contexts
+    \item usability, repeatability, adaptability
+    \end{itemize}
+  \item Who is going to \emph{do all this work}, and when?
+    \begin{itemize}
+    \item possible operations framework, or economic model?
+    \item training and promotion issues; \emph{ethical issues}
+    \item fastness
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\end{document}
