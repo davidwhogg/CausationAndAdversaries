@@ -2,9 +2,11 @@
 RM = /bin/rm -fv
 PDFLATEX = pdflatex
 
-all: hogg_causal_structure.pdf
+all: gvd.pdf
 
-%.pdf: %.tex hogg_presentation.tex
+%.pdf: %.tex
+	$(PDFLATEX) $*
+	$(PDFLATEX) $*
 	$(PDFLATEX) $*
 
 clean:
